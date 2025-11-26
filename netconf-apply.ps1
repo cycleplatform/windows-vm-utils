@@ -1,10 +1,16 @@
 # ============================================================
-# Cycle Windows VM Netconf
+# Cycle Windows VM Helpers
+# *Netconf Apply*
+# 
 # Applies cloud-init "network-config" to Windows NICs
 # Tested with PowerShell 5 on Windows Server 2025
 #
 # Copyright (c) 2025 Petrichor Holdings, Inc. (Cycle)
 # ============================================================
+
+$version = Get-Content "version.txt" -Raw
+Write-Host "Cycle Netconf Apply"
+Write-Host "Version: $version"
 
 Write-Host "[Cycle] Applying network configuration..."
 

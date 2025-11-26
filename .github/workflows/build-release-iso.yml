@@ -1,0 +1,60 @@
+name: Build & Release PowerShell Script ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v1.2.3)"
+        required: true
+        type: string
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write version.txt
+        run: |
+          echo "${{ github.event.inputs.version }}" > version.txt
+
+      - name: Commit version.txt
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add version.txt
+          git commit -m "Update version.txt to ${{ github.event.inputs.version }}" || echo "No changes to commit"
+          git push
+
+      - name: Create ISO image
+        run: |
+          mkdir iso-content
+          find . -maxdepth 1 -name "*.ps1" -exec cp {} iso-content/ \;
+          
+          # Uppercase volume labels are standard for ISO9660
+          VOL_LABEL="CYCLE-HELPERS-${{ github.event.inputs.version }}"
+          
+          xorriso -as mkisofs \
+            -V "$VOL_LABEL" \
+            -o cycle-helpers.iso \
+            iso-content
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycle-helpers-iso
+          path: cycle-helpers.iso
+          retention-days: 0  # permanent
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          files: cycle-helpers.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
